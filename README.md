@@ -32,9 +32,12 @@ https://railway.com/deploy/KJZc89?referralCode=uXzB-u&utm_medium=integration&utm
 
 1. Open your app’s public URL (e.g. `https://your-app.up.railway.app`).
 2. Go to **`/setup`** (e.g. `https://your-app.up.railway.app/setup`).
-3. Click **“Generate admin invite URL”**. The page will show a one-time invite link.
-4. Open that link in your browser and complete sign-up. That account is the first admin.
-5. From then on, use the app at **`/`** — log in with that admin (or with users you invite later).
+3. (Optional) If you want AI agents immediately, complete Step 1 on setup:
+   - set `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` in Railway variables
+   - run Codex login from setup (Claude uses `ANTHROPIC_API_KEY` directly)
+4. Click **“Generate admin invite URL”**. The page will show a one-time invite link.
+5. Open that link in your browser and complete sign-up. That account is the first admin.
+6. From then on, use the app at **`/`** — log in with that admin (or with users you invite later).
 
 You only need the setup page once to bootstrap the first admin. Don’t share `/setup` publicly if you don’t want others generating invite links.
 
@@ -111,5 +114,5 @@ docker stop paperclip_app paperclip_pg
 
 ## Support
 
-- **This template / deploy issues:** [this repo’s Issues](https://github.com/paperclipai/paperclip-railway-template/issues).
+- **This template / deploy issues:** [this repo’s Issues](https://github.com/Lukem121/paperclip-railway-template/issues).
 - **Paperclip app bugs and features:** [paperclipai/paperclip Issues](https://github.com/paperclipai/paperclip/issues).
