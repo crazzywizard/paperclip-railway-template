@@ -121,16 +121,16 @@ function setupHtml() {
       <div class="row" style="margin-bottom:20px;"><span class="muted">Paperclip health:</span> <strong id="health">checking...</strong></div>
 
       <div class="step">
-        <div class="step-num">Step 1 — AI adapter (for agents)</div>
+        <div class="step-num">Step 1 — AI adapter (optional)</div>
         <div class="step-title">Authenticate Codex (OpenAI)</div>
-        <p class="muted" style="margin:0 0 10px 0; font-size:13px;">Set <code style="background:#1a1a1a; padding:2px 6px; border-radius:4px;">OPENAI_API_KEY</code> in Railway variables, then run login so agents using the Codex adapter can call the API.</p>
+        <p class="muted" style="margin:0 0 10px 0; font-size:13px;">Only needed if you want agents to run. Set <code style="background:#1a1a1a; padding:2px 6px; border-radius:4px;">OPENAI_API_KEY</code> (and optionally <code style="background:#1a1a1a; padding:2px 6px; border-radius:4px;">ANTHROPIC_API_KEY</code>) in Railway variables, then run Codex login below. You can skip this and add keys later — the app works without them; agents will fail until keys are set.</p>
         <div class="row" style="margin-bottom:8px;"><span id="codexStatus" class="status-pending">Codex: checking...</span></div>
         <button id="codexLogin" type="button">Run Codex login</button>
         <pre id="codexOutput" style="margin-top:10px; display:none;">-</pre>
       </div>
 
       <div class="step">
-        <div class="step-num">Step 2 — First admin</div>
+        <div class="step-num">Step 2 — First admin (required)</div>
         <div class="step-title">Create admin invite</div>
         <p class="muted" style="margin:0 0 10px 0; font-size:13px;">Generate a one-time invite URL and open it to create the first admin account.</p>
         <div class="row"><button id="bootstrap">Generate admin invite URL</button></div>
