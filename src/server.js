@@ -240,9 +240,9 @@ function runCodexLogin() {
     });
   }
   return new Promise((resolve) => {
-    const child = spawn("codex", ["login", "--api-key", apiKey], {
+    const child = spawn("codex", ["login", "--with-api-key"], {
       env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["pipe", "pipe", "pipe"],
     });
     let out = "";
     let err = "";
@@ -254,6 +254,9 @@ function runCodexLogin() {
     });
     child.on("error", (e) => {
       resolve({ ok: false, output: `Failed to run codex: ${e.message}` });
+    });
+    child.stdin.write(apiKey, "utf8", () => {
+      child.stdin.end();
     });
   });
 }
