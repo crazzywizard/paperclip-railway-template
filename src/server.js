@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import express from "express";
 import httpProxy from "http-proxy";
 import pg from "pg";
@@ -104,32 +106,45 @@ function setupHtml() {
       a:hover { text-decoration:underline; }
       .invite-link { display:inline-block; word-break:break-all; font-family:ui-monospace, monospace; font-size:13px; }
       .footer { margin-top:24px; padding-top:16px; border-top:1px solid #2d2d2d; color:#9ca3af; font-size:13px; }
+      .step { margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid #2d2d2d; }
+      .step:last-of-type { border-bottom:0; margin-bottom:0; padding-bottom:0; }
+      .step-num { font-size:12px; color:#9ca3af; margin-bottom:4px; }
+      .step-title { font-size:16px; font-weight:600; color:#fff; margin:0 0 6px 0; }
+      .status-ok { color:#86efac; }
+      .status-pending { color:#fcd34d; }
     </style>
   </head>
   <body>
     <div class="card">
       <h1>Paperclip Setup</h1>
-      <p class="sub">Generate your first admin invite URL to bootstrap this instance.</p>
-      <div class="row">
-        <div class="label">Status</div>
-        <div>Paperclip health: <strong id="health">checking...</strong></div>
-      </div>
-      <div class="row"><button id="bootstrap">Generate admin invite URL</button></div>
-      <div class="row" id="inviteRow" style="display:none;">
-        <div class="label">Invite URL</div>
-        <a id="invite" href="#" target="_blank" rel="noopener" class="invite-link block"></a>
-      </div>
-      <div class="row">
-        <div class="label">Command output</div>
-        <pre id="output">-</pre>
-      </div>
-      <div class="row muted">After accepting the invite, open <a href="/" target="_blank">Paperclip app</a>.</div>
-      <div class="row" style="margin-top:24px; padding-top:20px; border-top:1px solid #2d2d2d;">
-        <div class="label">Codex (OpenAI) for agents</div>
-        <p class="muted" style="margin:0 0 10px 0; font-size:13px;">Agents that use the Codex adapter need Codex CLI auth. Run login so the container caches credentials from <code style="background:#1a1a1a; padding:2px 6px; border-radius:4px;">OPENAI_API_KEY</code>.</p>
+      <p class="sub">Complete these steps to get your instance ready.</p>
+      <div class="row" style="margin-bottom:20px;"><span class="muted">Paperclip health:</span> <strong id="health">checking...</strong></div>
+
+      <div class="step">
+        <div class="step-num">Step 1 — AI adapter (for agents)</div>
+        <div class="step-title">Authenticate Codex (OpenAI)</div>
+        <p class="muted" style="margin:0 0 10px 0; font-size:13px;">Set <code style="background:#1a1a1a; padding:2px 6px; border-radius:4px;">OPENAI_API_KEY</code> in Railway variables, then run login so agents using the Codex adapter can call the API.</p>
+        <div class="row" style="margin-bottom:8px;"><span id="codexStatus" class="status-pending">Codex: checking...</span></div>
         <button id="codexLogin" type="button">Run Codex login</button>
         <pre id="codexOutput" style="margin-top:10px; display:none;">-</pre>
       </div>
+
+      <div class="step">
+        <div class="step-num">Step 2 — First admin</div>
+        <div class="step-title">Create admin invite</div>
+        <p class="muted" style="margin:0 0 10px 0; font-size:13px;">Generate a one-time invite URL and open it to create the first admin account.</p>
+        <div class="row"><button id="bootstrap">Generate admin invite URL</button></div>
+        <div class="row" id="inviteRow" style="display:none;">
+          <div class="label">Invite URL</div>
+          <a id="invite" href="#" target="_blank" rel="noopener" class="invite-link block"></a>
+        </div>
+        <div class="row">
+          <div class="label">Command output</div>
+          <pre id="output">-</pre>
+        </div>
+      </div>
+
+      <div class="row muted">After accepting the invite, open <a href="/" target="_blank">Paperclip app</a>.</div>
       <div class="row footer">Template source &amp; support: <a href="https://github.com/Lukem121/paperclip-railway-template" target="_blank" rel="noopener">GitHub</a></div>
     </div>
     <script>
@@ -140,6 +155,7 @@ function setupHtml() {
       const button = document.getElementById("bootstrap");
       const codexBtn = document.getElementById("codexLogin");
       const codexOutput = document.getElementById("codexOutput");
+      const codexStatusEl = document.getElementById("codexStatus");
 
       async function refreshHealth() {
         try {
@@ -148,6 +164,26 @@ function setupHtml() {
           healthEl.textContent = j.paperclipReady ? "ready" : "starting";
         } catch {
           healthEl.textContent = "unreachable";
+        }
+      }
+
+      async function refreshCodexStatus() {
+        try {
+          const res = await fetch("/setup/api/codex-status");
+          const j = await res.json();
+          if (j.codexAuthenticated) {
+            codexStatusEl.textContent = "Codex: ✓ authenticated";
+            codexStatusEl.className = "status-ok";
+          } else if (j.openaiApiKeySet) {
+            codexStatusEl.textContent = "Codex: Not authenticated — run login below";
+            codexStatusEl.className = "status-pending";
+          } else {
+            codexStatusEl.textContent = "Codex: Set OPENAI_API_KEY in Railway, then run login";
+            codexStatusEl.className = "status-pending";
+          }
+        } catch {
+          codexStatusEl.textContent = "Codex: status unavailable";
+          codexStatusEl.className = "status-pending";
         }
       }
 
@@ -180,6 +216,7 @@ function setupHtml() {
           const res = await fetch("/setup/api/codex-login", { method: "POST" });
           const j = await res.json();
           codexOutput.textContent = j.output || JSON.stringify(j, null, 2);
+          await refreshCodexStatus();
         } catch (err) {
           codexOutput.textContent = String(err);
         } finally {
@@ -188,7 +225,9 @@ function setupHtml() {
       };
 
       refreshHealth();
+      refreshCodexStatus();
       setInterval(refreshHealth, 5000);
+      setInterval(refreshCodexStatus, 10000);
     </script>
   </body>
 </html>`;
@@ -303,6 +342,18 @@ app.post("/setup/api/bootstrap", async (req, res) => {
   res.status(result.ok ? 200 : 500).json(result);
 });
 
+function getCodexStatus() {
+  const codexHome = process.env.CODEX_HOME || path.join(process.env.HOME || "/home/node", ".codex");
+  const authPath = path.join(codexHome, "auth.json");
+  const codexAuthenticated = fs.existsSync(authPath);
+  const openaiApiKeySet = Boolean(process.env.OPENAI_API_KEY?.trim());
+  return { codexAuthenticated, openaiApiKeySet };
+}
+
+app.get("/setup/api/codex-status", (_req, res) => {
+  res.status(200).json(getCodexStatus());
+});
+
 app.post("/setup/api/codex-login", async (_req, res) => {
   const result = await runCodexLogin();
   res.status(result.ok ? 200 : 400).json(result);
@@ -333,6 +384,16 @@ server.on("upgrade", (req, socket, head) => {
 });
 
 startPaperclip();
+
+// If OPENAI_API_KEY is set, authenticate Codex at startup so agents work without visiting /setup
+if (process.env.OPENAI_API_KEY?.trim()) {
+  runCodexLogin()
+    .then((r) => {
+      if (r.ok) console.log("[wrapper] Codex login succeeded (OPENAI_API_KEY)");
+      else console.warn("[wrapper] Codex login failed:", r.output);
+    })
+    .catch((e) => console.warn("[wrapper] Codex login error:", e.message));
+}
 
 const shutdown = () => {
   if (paperclipProc) {
