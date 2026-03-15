@@ -124,6 +124,12 @@ function setupHtml() {
         <pre id="output">-</pre>
       </div>
       <div class="row muted">After accepting the invite, open <a href="/" target="_blank">Paperclip app</a>.</div>
+      <div class="row" style="margin-top:24px; padding-top:20px; border-top:1px solid #2d2d2d;">
+        <div class="label">Codex (OpenAI) for agents</div>
+        <p class="muted" style="margin:0 0 10px 0; font-size:13px;">Agents that use the Codex adapter need Codex CLI auth. Run login so the container caches credentials from <code style="background:#1a1a1a; padding:2px 6px; border-radius:4px;">OPENAI_API_KEY</code>.</p>
+        <button id="codexLogin" type="button">Run Codex login</button>
+        <pre id="codexOutput" style="margin-top:10px; display:none;">-</pre>
+      </div>
       <div class="row footer">Template source &amp; support: <a href="https://github.com/Lukem121/paperclip-railway-template" target="_blank" rel="noopener">GitHub</a></div>
     </div>
     <script>
@@ -132,6 +138,8 @@ function setupHtml() {
       const inviteEl = document.getElementById("invite");
       const inviteRow = document.getElementById("inviteRow");
       const button = document.getElementById("bootstrap");
+      const codexBtn = document.getElementById("codexLogin");
+      const codexOutput = document.getElementById("codexOutput");
 
       async function refreshHealth() {
         try {
@@ -161,6 +169,21 @@ function setupHtml() {
         } finally {
           button.disabled = false;
           refreshHealth();
+        }
+      };
+
+      codexBtn.onclick = async () => {
+        codexBtn.disabled = true;
+        codexOutput.style.display = "block";
+        codexOutput.textContent = "Running codex login...";
+        try {
+          const res = await fetch("/setup/api/codex-login", { method: "POST" });
+          const j = await res.json();
+          codexOutput.textContent = j.output || JSON.stringify(j, null, 2);
+        } catch (err) {
+          codexOutput.textContent = String(err);
+        } finally {
+          codexBtn.disabled = false;
         }
       };
 
@@ -208,6 +231,33 @@ function runBootstrap(baseUrl) {
   });
 }
 
+function runCodexLogin() {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) {
+    return Promise.resolve({
+      ok: false,
+      output: "OPENAI_API_KEY is not set. Add it in Railway service variables, then run this again.",
+    });
+  }
+  return new Promise((resolve) => {
+    const child = spawn("codex", ["login", "--api-key", apiKey], {
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let out = "";
+    let err = "";
+    child.stdout.on("data", (chunk) => { out += chunk.toString(); });
+    child.stderr.on("data", (chunk) => { err += chunk.toString(); });
+    child.on("close", (code) => {
+      const combined = [out.trim(), err.trim()].filter(Boolean).join("\n") || "(no output)";
+      resolve({ ok: code === 0, output: combined });
+    });
+    child.on("error", (e) => {
+      resolve({ ok: false, output: `Failed to run codex: ${e.message}` });
+    });
+  });
+}
+
 const app = express();
 const proxy = httpProxy.createProxyServer({
   target: PAPERCLIP_TARGET,
@@ -248,6 +298,11 @@ app.post("/setup/api/bootstrap", async (req, res) => {
   const baseUrl = buildBaseUrl(req);
   const result = await runBootstrap(baseUrl);
   res.status(result.ok ? 200 : 500).json(result);
+});
+
+app.post("/setup/api/codex-login", async (_req, res) => {
+  const result = await runCodexLogin();
+  res.status(result.ok ? 200 : 400).json(result);
 });
 
 // If no instance admin yet, send visitors from / to /setup
