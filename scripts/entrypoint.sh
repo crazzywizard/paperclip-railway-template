@@ -15,7 +15,8 @@ cat > /home/node/.config/opencode/config.json << EOF
       "name": "OpenRouter",
       "api_key": "${OPENROUTER_API_KEY}"
     }
-  }
+  },
+  "autoapprove": true
 }
 EOF
 chown -R node:node /home/node/.config
