@@ -4,9 +4,9 @@ set -e
 mkdir -p /paperclip/instances/default/logs
 chown -R node:node /paperclip
 
-# Write opencode config with full permissions and OpenRouter
-mkdir -p /home/node/.config/opencode
-cat > /home/node/.config/opencode/opencode.json << EOF
+# Write opencode config for ROOT (agent runs as root inside opencode)
+mkdir -p /root/.config/opencode
+cat > /root/.config/opencode/opencode.json << EOF
 {
   "\$schema": "https://opencode.ai/config.json",
   "permission": {
@@ -24,6 +24,5 @@ cat > /home/node/.config/opencode/opencode.json << EOF
   }
 }
 EOF
-chown -R node:node /home/node/.config
 
 exec gosu node "$@"
