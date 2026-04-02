@@ -16,7 +16,14 @@ cat > /home/node/.config/opencode/config.json << EOF
       "api_key": "${OPENROUTER_API_KEY}"
     }
   },
-  "autoapprove": true
+  "autoapprove": [
+    "read",
+    "write",
+    "edit",
+    "bash",
+    "web_fetch",
+    "list"
+  ]
 }
 EOF
 chown -R node:node /home/node/.config
