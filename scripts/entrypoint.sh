@@ -17,9 +17,9 @@ cat > /root/.config/opencode/opencode.json << EOF
     "webfetch": "allow"
   },
   "providers": {
-    "openrouter": {
-      "name": "OpenRouter",
-      "api_key": "${OPENROUTER_API_KEY}"
+    "fireworks": {
+      "name": "Fireworks AI",
+      "api_key": "${FIREWORKS_API_KEY}"
     }
   }
 }
